@@ -1,67 +1,26 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR Web Processor</title>
+    <!-- Update the CSS path to be relative -->
     <link rel="stylesheet" href="./styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.7/axios.min.js"></script>
-    <style>
-        /* RTL specific overrides */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            direction: rtl;
-            text-align: right;
-        }
-
-        .file-input-label {
-            text-align: center;
-        }
-
-        .results-textarea {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            direction: rtl;
-            text-align: right;
-            padding: 1rem;
-            font-size: 1.1rem;
-            line-height: 1.8;
-        }
-
-        /* Fix button icons direction */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .btn svg {
-            transform: scaleX(-1);
-        }
-
-        /* Status message RTL */
-        .status-message {
-            text-align: right;
-        }
-
-        /* Preview section RTL */
-        .preview-section {
-            direction: rtl;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1>معالج النصوص الضوئي</h1>
-            <p>استخراج النص من الصور بشكل فوري</p>
+            <h1>OCR Web Processor</h1>
+            <p>Extract text from your images instantly</p>
         </header>
         
+        <!-- File Upload Section -->
         <div class="upload-section">
-            <label class="label">رفع الصور</label>
+            <label class="label">Upload Images</label>
             <div class="file-input-wrapper">
                 <label class="file-input-label" for="imageInput">
-                    <span>اسحب الملفات هنا أو انقر للرفع</span>
+                    <span>Drop files here or click to upload</span>
                 </label>
                 <input 
                     type="file" 
@@ -73,40 +32,46 @@
             </div>
         </div>
 
+        <!-- Preview Section -->
         <div id="imagePreview" class="preview-section"></div>
 
+        <!-- Progress bar -->
         <div class="progress" style="display: none;">
             <div class="progress-bar" style="width: 0%"></div>
         </div>
 
+        <!-- Process Button -->
         <button 
             id="processBtn"
             class="btn btn-primary"
             disabled
         >
-            معالجة الصور
+            Process Images
         </button>
 
+        <!-- Results Section -->
         <div class="results-section">
-            <label class="label">النص المستخرج</label>
+            <label class="label">Extracted Text</label>
             <textarea 
                 id="resultText"
                 class="results-textarea"
                 readonly
                 dir="rtl"
-                lang="ar"
-                placeholder="سيظهر النص المستخرج هنا..."
+                style="font-family: 'Arial', sans-serif; text-align: right;"
+                placeholder="النص المستخرج سيظهر هنا..."
             ></textarea>
 
+            <!-- Download Button -->
             <button 
                 id="downloadBtn"
                 class="btn btn-secondary"
                 disabled
             >
-                تحميل كملف نصي
+                Download as TXT
             </button>
         </div>
 
+        <!-- Status message -->
         <div id="statusMessage" class="status-message" style="display: none;"></div>
     </div>
 
@@ -159,7 +124,7 @@
         // Process images
         processBtn.addEventListener('click', async () => {
             processBtn.disabled = true;
-            resultText.value = 'جاري المعالجة...';
+            resultText.value = 'Processing...';
             progressBar.style.display = 'block';
             let allText = [];
 
@@ -167,18 +132,19 @@
                 for (let i = 0; i < selectedFiles.length; i++) {
                     const file = selectedFiles[i];
                     const text = await processImage(file);
-                    allText.push(`الملف: ${file.name}\n${text}\n`);
-                    
+                    allText.push(`${text}\n`);  // Remove the file name from output
+
+                    // Update progress
                     const progress = ((i + 1) / selectedFiles.length) * 100;
                     progressBarInner.style.width = `${progress}%`;
                 }
-                
+
                 resultText.value = allText.join('\n');
                 downloadBtn.disabled = false;
-                showStatus('تمت المعالجة بنجاح!');
+                showStatus('Processing completed successfully!');
             } catch (error) {
-                showStatus(`خطأ: ${error.message}`, 'error');
-                resultText.value = `خطأ: ${error.message}`;
+                showStatus(`Error: ${error.message}`, 'error');
+                resultText.value = `Error: ${error.message}`;
             } finally {
                 processBtn.disabled = false;
                 progressBar.style.display = 'none';
@@ -195,13 +161,7 @@
                     {
                         headers: {
                             'Content-Type': file.type,
-                            'Ocp-Apim-Subscription-Key': subscriptionKey,
-                            // Add language detection and RTL support
-                            'Accept-Language': 'ar,en'
-                        },
-                        params: {
-                            'language': 'ar,en',
-                            'detectOrientation': 'true'
+                            'Ocp-Apim-Subscription-Key': subscriptionKey
                         }
                     }
                 );
@@ -226,24 +186,19 @@
                     }
 
                     if (result.data.status === 'failed') {
-                        throw new Error('فشلت عملية معالجة النص');
+                        throw new Error('OCR processing failed');
                     }
 
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             } catch (error) {
-                throw new Error(`فشلت معالجة ${file.name}: ${error.message}`);
+                throw new Error(`Failed to process ${file.name}: ${error.message}`);
             }
         }
 
-        // Handle download with proper encoding
+        // Handle download
         downloadBtn.addEventListener('click', () => {
-            // Add BOM for proper UTF-8 encoding
-            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
-            const text = resultText.value;
-            const blob = new Blob([bom, text], { 
-                type: 'text/plain;charset=utf-8' 
-            });
+            const blob = new Blob([resultText.value], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
