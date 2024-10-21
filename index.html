@@ -56,8 +56,8 @@
                 id="resultText"
                 class="results-textarea"
                 readonly
-                dir="rtl"
-                style="font-family: 'Arial', sans-serif; text-align: right;"
+                dir="rtl"  <!-- Set text direction to RTL -->
+                style="font-family: 'Arial', sans-serif; text-align: right;"  <!-- Choose a font suitable for Arabic -->
                 placeholder="النص المستخرج سيظهر هنا..."
             ></textarea>
 
@@ -156,7 +156,7 @@
         async function processImage(file) {
             try {
                 const response = await axios.post(
-                    `${endpoint}vision/v3.1/read/analyze`,
+                    `${endpoint}vision/v3.1/read/analyze?language=ar`, // Specify Arabic language
                     file,
                     {
                         headers: {
